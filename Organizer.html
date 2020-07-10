@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Urok 10 </title>
+<script src="https://npmcdn.com/react@15.3.0/dist/react.js"></script>
+<script src="https://npmcdn.com/react-dom@15.3.0/dist/react-dom.js"></script>
+<script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+<script src="https://npmcdn.com/jquery@3.1.0/dist/jquery.min.js"></script>
+<script src="https://npmcdn.com/remarkable@1.6.2/dist/remarkable.min.js"></script>
+
+
+<style>
+#parent {
+				text-align: center;
+			}
+			#calendar {
+				display: inline-block;
+			}
+			#calendar td, #calendar th {
+				padding: 5px 12px;
+				border: 1px solid black;
+				text-align: center;
+				cursor : pointer;
+			}
+			
+			#calendar td:hover{
+				background-color: black;
+				color: white;
+			}
+			
+			#calendar td.active{
+				background-color: black;
+				color: white;
+			}
+			
+			.nav a{
+				text-decoration: none;
+			}
+			
+			a:hover{
+				color:red;
+			}
+			
+			#taskList {
+				
+				list-style-type: none;
+				font-size: 16px;
+				padding: 10px;
+				text-align: center;
+				
+			}
+
+			#taskList li{
+				border: 1px solid black;
+				padding: 10px;
+				width: 300px;
+				margin: 0 auto;
+			}
+			
+			span{
+				margin-right: 5px;
+			}
+			
+			span:hover{
+				text-decoration: underline;
+			}
+			
+			.remove, .mark{
+				cursor: pointer;
+			}
+			
+			.remove{
+				color: red;
+			}
+			
+			.done{
+				text-decoration: line-through;
+			}
+</style>
+</head>
+
+<body>
+	<div id="content">
+			
+	</div>
+<script type="text/babel">
+//task6
+/*Реализуйте органайзер. Он должен представлять собой календарь за текущий месяц. 
+По нажатию на определенную дату календаря мы должны увидеть список дел, запланированных 
+на этот день. Каждое дело можно поредактировать, отметить сделанным или удалить, можно также 
+добавить новое дело. Над календарем должны быть стрелочки 'назад' и 'вперед', с помощью которых 
+можно сменить месяц и год в календаре.
+*/
+
+class TaskList extends React.Component
+{
+	constructor(){
+		super();
+	}
+	
+	fillTaskList()
+	{
+		let res = [];
+		for(let key in this.props.tasksActive)
+		{
+			res.push(this.props.tasksActive[key]);
+		}
+		
+		return res.map((task,taskNum) => {
+				let taskText = task[0];	
+				return this.createTask(taskNum, taskText)
+			});
+	}
+	
+	editTask(event){
+		let activeTd = document.querySelector('#calendar td.active');
+		let editInput = document.createElement('input');
+		let task = event.target;
+		
+		let parentThis = this.props.parentThis;
+		editInput.value = task.innerText ;
+		
+		editInput.addEventListener('blur', function(){ 
+			parentThis.state.tasks[activeTd.dataset.key][task.dataset.tasknum][0] = editInput.value;
+			task.innerHTML = editInput.value;
+		});
+		
+		parentThis.setState({tasks : parentThis.state.tasks});
+		task.innerHTML = '';
+		task.appendChild(editInput);
+	}
+	
+	markClickHandler(event){
+		let parentThis = this.props.parentThis;
+		let activeTd = document.querySelector('#calendar td.active');
+		let mark = event.target;
+		let task = mark.previousElementSibling;
+
+		let className = parentThis.state.tasks[activeTd.dataset.key][task.dataset.tasknum][1];
+		if(className =='done')
+		{
+			parentThis.state.tasks[activeTd.dataset.key][task.dataset.tasknum][1] = 'notdone';
+		}
+		else
+		{
+			parentThis.state.tasks[activeTd.dataset.key][task.dataset.tasknum][1] = 'done';
+		}
+		parentThis.setState({tasks : parentThis.state.tasks});
+	}
+	
+	removeClickHandler(event){
+		let parentThis = this.props.parentThis;
+		let activeTd = document.querySelector('#calendar td.active');
+		let remove = event.target;
+		let task = remove.previousElementSibling.previousElementSibling;
+		parentThis.state.tasks[activeTd.dataset.key][task.dataset.tasknum] = 'undefined';
+		//delete parentThis.state.tasks[activeTd.dataset.key][task.dataset.tasknum];
+		parentThis.setState({tasks : parentThis.state.tasks});	
+		console.log('tasks', parentThis.state.tasks);
+		console.log('tasksActive', parentThis.state.tasksActive);
+	}
+	
+	createTask(taskNum, taskText)
+	{
+		console.log('taskNum', taskNum);
+		console.log('taskText', taskText);
+		console.log(this.props.tasksActive[taskNum]);
+		let li = '';
+		if (this.props.tasksActive[taskNum]!='undefined')
+		{
+			li = <li key = {taskNum}>
+				
+						<span 
+							className = {this.props.tasksActive[taskNum][1] + ' task'}
+							data-taskNum = {taskNum}
+							onClick = {this.editTask.bind(this)}		
+						> {taskText} 
+						</span>
+						<span 
+							className = 'mark'
+							onClick = {this.markClickHandler.bind(this)}
+							> сделано 
+						</span>
+						<span 
+							className = 'remove'
+							onClick = {this.removeClickHandler.bind(this)}
+						> удалить </span>
+					</li>;
+		}		
+		return li;
+	}
+
+	render(){
+		this.fillTaskList();
+		return <div id = 'taskList'>
+					{this.fillTaskList()}
+				</div>
+	}
+}
+
+class Calendar extends React.Component
+{
+	constructor(){
+		super();
+	}
+	
+	getDate(){
+				let date = new Date();
+				let year  = date.getFullYear();
+				let month = date.getMonth();
+				return {'year' : year, 'month' : month};
+			}
+			
+	showInfo(){
+				this.state.info = this.state.months[Number(this.month)] + " " + this.state.year;
+			}
+			
+	range(count){
+			let arr = [];
+			for(let i = 1; i <= count; i++)
+			{
+				arr.push(i);
+			}
+			return arr;
+		}
+	
+	//функция, которая будет возвращать номер последнего дня месяца:
+	getLastDay(year, month) {
+		let lastDay = (new Date(year, month + 1, 0)).getDate();
+		return lastDay;
+	}
+	
+	
+	//сделаем функцию, которая будет получать номер для недели первого дня месяца:
+	getFirstWeekDay(year, month) {
+		let firstWeekDay = (new Date(year, month, 1)).getDay();
+		if(firstWeekDay == 0)
+			return 6;
+		else
+			return firstWeekDay - 1;
+	}
+	
+	//И аналогичную функцию для последнего дня месяца:
+	getLastWeekDay(year, month) {
+		let lastWeekDay = (new Date(year, month, this.getLastDay(year, month))).getDay();
+		if(lastWeekDay == 0)
+			return 6;
+		else
+		return lastWeekDay - 1;
+	}
+	
+	//функция normalize, первым параметром принимающая массив, вторым - сколько
+	//пустых строк добавить слева, а третьим - сколько пустых строк справа:
+	normalize(arr, left, right) {
+		let res = arr;
+		for(let i = 0; i < left; i++)
+		{
+			res.unshift('');
+		}
+		for(let j = 0; j < right; j++)
+		{
+			res.push('');
+		}
+		return res;
+	}
+	
+	chunk(arr, n) {
+		// n - количество элементов в подмассиве
+		let res = [];
+		let k = 0;
+		for(let i = 0; i < Math.ceil(arr.length/n); i++)
+		{
+			for(let j = 0; j < n; j++)
+			{
+				res.push(arr.splice(i*n,n));
+				k++;
+			}
+		}
+		return res;
+	}
+
+	//сделаем функцию createTable, первым параметром принимающую ссылку на родительский элемент 
+	//чисел календаря (в нашем случае это будет tbody), а вторым - двухмерный массив:
+	createTable(arr) {
+		const tableContent = 
+							  <tbody>
+								{arr.map((subArr,index) => { 
+									return(
+									  <tr key = {index}>
+										{	
+											subArr.map((elem,subIndex) => { 
+												return( <td key = {subIndex}>{elem}</td>) 
+											})
+										}
+									   </tr>
+									)
+								   })
+								 }
+							  </tbody>
+		return  tableContent;
+	}
+	
+	//Обернем код формирования календаря в функцию:
+	draw(year, month)
+	{
+		let arr = this.range(this.getLastDay(year, month));
+		let firstWeekDay = this.getFirstWeekDay(year, month);
+		let lastWeekDay = this.getLastWeekDay(year, month);
+		let res = this.chunk(this.normalize(arr, firstWeekDay, 6 - lastWeekDay), 7);
+		return this.createTable(res);
+	}
+	
+	render(){
+		return this.draw(this.props.year, this.props.month);
+	}
+}
+
+class App extends React.Component
+{
+	constructor(){
+		super();
+		this.state = {  calendar : document.querySelector('#calendar'),
+
+						year  : String((new Date()).getFullYear()),
+						month : String((new Date()).getMonth()),
+						
+						months : ['январь', 'февраль', 'март','апрель', 'май', 'июнь','июль', 'август', 'сентябрь',
+							'октябрь', 'ноябрь', 'декабрь'],
+							
+						info : ['январь', 'февраль', 'март','апрель', 'май', 'июнь','июль', 'август', 'сентябрь',
+							'октябрь', 'ноябрь', 'декабрь'][String((new Date()).getMonth())]+" "+String((new Date()).getFullYear()), 
+						month_displacement : 0,
+						
+						tasks : [],
+						
+						tasksActive : {},
+					};
+	}
+
+	prevClickHandler(){
+		this.state.month_displacement--;
+		this.changeCurrentDate();
+		this.setState({tasksActive : {}});
+	}
+	
+	nextClickHandler(){
+		this.state.month_displacement++;
+		this.changeCurrentDate();
+		this.setState({tasksActive : {}});
+	}
+	
+	changeCurrentDate(){
+		this.setState({month_displacement : this.state.month_displacement});
+		let current = new Date(this.state.year, +this.state.month + +this.state.month_displacement);
+	
+		this.state.info = this.state.months[current.getMonth()] + ' ' + current.getFullYear();
+		this.setState({info : this.state.info});
+	}
+	
+	tableClickHandler(event){
+		
+		let activeTd = document.querySelector('#calendar td.active');
+		if(activeTd)
+		{
+			activeTd.classList.remove('active');
+		}
+		let target = event.target;
+		target.classList.add('active');
+		target.dataset.key = target.innerHTML + " " + info.innerHTML;
+		
+		if(this.state.tasks[target.dataset.key])
+		{
+			this.state.tasksActive = this.state.tasks[target.dataset.key];
+		}
+		else
+		{
+			this.state.tasksActive = {};
+		}		
+		
+		this.setState({tasksActive : this.state.tasksActive});
+		console.log(this.state.tasksActive);
+	}
+	
+	addNewTask(){
+		let activeTd = document.querySelector('#calendar td.active');
+		
+		let tasksActive = this.state.tasks[activeTd.dataset.key];
+		
+		let taskNum = 0;
+		let self = this;
+		if(!tasksActive){
+			tasksActive = {};
+		}
+		else{
+			taskNum = Object.keys(tasksActive).length;
+		}
+		
+		tasksActive[taskNum] = [];
+		tasksActive[taskNum][0] = newTask.value;
+		tasksActive[taskNum][1] = 'notdone';
+		this.state.tasks[activeTd.dataset.key] = tasksActive;
+		this.state.tasksActive = tasksActive;
+		this.setState({tasks : this.state.tasks, tasksActive : this.state.tasksActive});
+	}
+	
+	render(){
+		return  <div id="parent">
+					<div id="calendar">
+						<div className="nav">
+								<a href="#" className="prev" onClick = {this.prevClickHandler.bind(this)}>←</a>
+								<a href="#" className="next" onClick = {this.nextClickHandler.bind(this)}>→</a>
+						</div>
+						<div id = 'info'>{this.state.info}</div>
+						<table id = 'table' onClick = {this.tableClickHandler.bind(this)}>
+							<thead>
+								<tr>
+									<th>пн</th>
+									<th>вт</th>
+									<th>ср</th>
+									<th>чт</th>
+									<th>пт</th>
+									<th>сб</th>
+									<th>вс</th>
+								</tr>
+							</thead>
+							<Calendar 
+								year = {this.state.year}
+								month = {+this.state.month + this.state.month_displacement}
+								/>
+						</table>
+						
+					</div>
+					<div id = 'organizer' >
+						<input type = 'text' id = 'newTask' placeholder = 'введите новую задачу'/>
+						<button id = 'addNewTask' onClick = {this.addNewTask.bind(this,event)}>Добавить</button>
+						
+						<TaskList 
+							tasksActive = {this.state.tasksActive}
+							parentThis = {this}
+						/>
+					</div>
+				</div>
+	}
+}
+
+ReactDOM.render(<App/>, document.getElementById('content'));
+</script>
+
+</body>
+</html>
+	
